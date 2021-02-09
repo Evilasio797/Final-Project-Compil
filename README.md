@@ -21,15 +21,15 @@ Projeto final de Compiladores
    
    Instructions:
 First, compile the nodes of the abstract tree. After you compile the visitor.
- cd src/
- javac semantic_actions/syntax_tree/*.java
- javac semantic_actions/visitor/*.java
+ 1- cd src/
+ 2- javac semantic_actions/syntax_tree/*.java
+ 3- javac semantic_actions/visitor/*.java
 
 Generate the parser. It is like the previous one.
- cd lexical_analyser
- javacc Parser.jj
- cd ..
- javac lexical_analyser/*.java
+ 1- cd lexical_analyser
+ 2- javacc Parser.jj
+ 3- cd ..
+ 4- javac lexical_analyser/*.java
 
 Run the compiler.
  java lexical_analyser.Parser test_files/minijava.java
