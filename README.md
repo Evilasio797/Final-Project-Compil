@@ -7,13 +7,14 @@ Projeto final de Compiladores
    
    1. Lexical Analyser and Parser Phase
    Instructions:
- cd src/lexical_analyser
- javacc Parser.jj
- cd ..
- javac lexical_analyser/*.java
- javac semantic_actions/*/*.java
- javac *.java
- java Main test_files/minijava.java 
+ 
+ 1- cd src/lexical_analyser
+ 2- javacc Parser.jj
+ 3- cd ..
+ 4- javac lexical_analyser/*.java
+ 5- javac semantic_actions/*/*.java
+ 6- javac *.java
+ 7- java Main test_files/minijava.java 
 
 2. Semantic Actions Phase
    -- need to fix some bugs in semantic_actions
