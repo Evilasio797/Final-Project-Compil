@@ -1,0 +1,446 @@
+PARSER_BEGIN(Parser)
+<<<<<<< HEAD
+=======
+
+>>>>>>> 53ff8d9a9d3c62893e017dbf6d011e9b5f5b43bb
+package lexical_analyser;
+import semantic_actions.syntax_tree.*;
+public class Parser {
+    public static void main(String[] args) {
+        try {
+            new Parser(new java.io.FileInputStream(args[0])).S(); // Source code
+            System.out.println("Syntax is okay");
+        } catch (Throwable e) {
+            // Catching Throwable is ugly but JavaCC throws Error objects!
+            System.out.println("Syntax check failed: " + e.getMessage());
+        }
+    }
+}
+
+PARSER_END(Parser)
+
+TOKEN : {   
+    // Bold keywords from book
+        <PUBLIC : "public"> {System.out.println("PUBILC ");}// Lowercase pattern
+    |   <STATIC : "static"> {System.out.println("STATIC ");}
+    |   <VOID : "void"> {System.out.println("VOID ");}
+    |   <MAIN : "main"> {System.out.println("MAIN ");}
+
+    |   <CLASS : "class"> {System.out.println("CLASS ");}
+    |   <EXTENDS : "extends"> {System.out.println("EXTENDS ");}
+
+    |   <PRINT : "System.out.println"> {System.out.println("PRINT ");}
+
+    |   <THIS : "this"> {System.out.println("THIS ");}
+    |   <NEW : "new"> {System.out.println("NEW ");}
+    |   <STRING : "String"> {System.out.println("STRING ");}
+    |   <INT: "int"> {System.out.println("INT ");}
+    |   <RETURN : "return"> {System.out.println("RETURN ");}
+
+    |   <BOOLEAN: "boolean"> {System.out.println("BOOLEAN ");}
+    |   <TRUE : "true"> {System.out.println("TRUE ");}
+    |   <FALSE : "false"> {System.out.println("FALSE ");}
+
+    |   <IF : "if"> {System.out.println("IF ");}
+    |   <ELSE : "else"> {System.out.println("ELSE ");}
+    |   <WHILE : "while"> {System.out.println("WHILE ");}
+
+    |   <LENGTH : "length"> {System.out.println("LENGHT ");}
+
+    // Some local tokens necessary bellow
+    |   <#LETTER : (["A" - "Z"] | ["a"-"z"]) >
+    |   <#DIGIT : ["0"-"9"] >
+    |   <#REAL : (
+                    (<DIGIT>)+ "." (<DIGIT>)*  // Real numbers can be like this way
+                  ) |
+                 (
+                    (<DIGIT>)* "." (<DIGIT>)+  // Or this
+                  ) >
+    |   < #INTEGER : (<DIGIT>)+ > //  Maybe this is unnecessary
+    
+    // Necessary symbols
+    |   <AND : "&&"> {System.out.println("AND ");}
+    // |   <OR : "||"> {System.out.println("OR ");}
+    |   <EQUAL : "="> {System.out.println("EQUAL ");}
+
+    |   <LESS_THAN : "<"> {System.out.println("LESS_THAN ");}
+    // |   <BIGGER_THEN : ">"> {System.out.println("BIGGER_THEN ");}
+    |   <PLUS : "+"> {System.out.println("PLUSS ");}
+    |   <MINUS : "-"> {System.out.println("MINUS ");}
+    |   <TIMES : "*"> {System.out.println("TIMES ");}
+    // |   <BAR : "/"> {System.out.println("BAR ");}
+
+    |   <LPAREN : "("> {System.out.println("LPAREN ");}
+    |   <RPAREN : ")"> {System.out.println("RPAREN ");}
+    |   <LBRACE : "{"> {System.out.println("LBRACE ");}
+    |   <RBRACE : "}"> {System.out.println("RBRACE ");}
+    |   <RBRACE_INTER : ")?"> {System.out.println("RBRACE_INTER ");}
+    |   <LCOLCH : "["> {System.out.println("LCOLCH ");}
+    |   <RCOLCH : "]"> {System.out.println("RCOLCH ");}
+
+    |   <BANG : "!"> {System.out.println("BANG ");}
+    |   <DOT : "."> {System.out.println("DOT ");}
+    |   <COMMA : ","> {System.out.println("COMMA ");}
+    |   <SEMI_COMMA : ";"> {System.out.println("SEMI_COMMA ");}
+
+	// The lexical issues
+    |   <ID: ( <LETTER>(<LETTER> | <DIGIT> | "-")* ) > {System.out.println("ID ");}  // Expression migh be in parenthesis
+    // Integer has been replaced by the entire expression and the warning has been solved
+    |   <INTEGER_LITERAL : ((["0"-"9"])+) | <REAL> > {System.out.println("INTEGER_LITERAL ");}  // Only numbers
+
+
+}
+
+SKIP : {
+     " " | "\t" | "\n" | "\r"
+}
+
+
+// Doubt if the method has to have the same name of the node
+
+Program S():	{
+    MainClass main;
+    ClassDecl class_decl;
+    ClassDeclList class_list = new ClassDeclList();
+}{  // Tenho d?vidas se isso deve continuar assim
+	main = MainClass() 
+	(class_decl = ClassDecl() { class_list.addElement(class_decl); })*
+	<EOF>
+    { return new Program(main, class_list); }
+}
+
+MainClass MainClass():	{
+    Identifier class_id, id;
+    Statement stm;
+}{
+	<CLASS>
+	class_id = Id()
+	<LBRACE> 
+    <PUBLIC> <STATIC> <VOID> <MAIN>
+	<LPAREN> 
+    <STRING> <LCOLCH> <RCOLCH> id = Id() 
+    <RPAREN>
+	<LBRACE> stm = Statement() <RBRACE>
+	<RBRACE>
+    { return MainClass(class_id, id, stm); } // atention
+}
+
+// the refactoring of the grammar is maintained by the return semantic action
+// this is the reason why the call to aux does no appear
+ClassDecl ClassDecl():	{  // Correction
+    Identifier id;
+}{ 
+	<CLASS> 
+    id = Id() 
+    { return ClassDecl_Aux(id); } // atention
+
+}
+
+ClassDecl ClassDecl_Aux(Identifier class_id):	{  // atention
+    VarDecl var_dcl;
+    VarDeclList var_list = new VarDeclList();
+    MethodDecl mth_dcl;
+    MethodDeclList mth_list;
+    Identifier ext_id, id;
+}{
+		(
+            <LBRACE> 
+            ( var_dcl = VarDecl() { var_list.addElement(var_dcl); })* 
+            ( mth_dcl = MethodDecl() { mth_list.addElement(mth_dcl); })* 
+            <RBRACE>
+            { return new ClassDeclSimple(class_id, var_list, mth_list); }
+        )
+
+	|	(
+		    <EXTENDS> ext_id = Id() 
+		    <LBRACE> id = Id() 
+            ( var_dcl = VarDecl() { var_list.addElement(var_dcl); })* 
+            ( mth_dcl = MethodDecl() { mth_list.addElement(mth_dcl); })* 
+            <RBRACE>
+            { return new ClassDeclExtends(class_id, id, var_list, mth_list); }
+		)
+	|	{ return new ClassDeclSimple(class_id); }  // Empty definition
+}
+
+VarDecl VarDecl():	{
+    Type type;
+    Identifier id;
+}{
+	type = Type() 
+    id = Id()
+    <SEMI_COMMA>
+    { return new VarDecl(type, id); }
+}
+
+MethodDecl MethodDecl():	{
+    Type type;
+    Identifier id;
+    FormalList formal_list;
+    VarDecl var_dlc;
+    VarDeclList var_list = new VarDeclList();
+    Statement stm;
+    StatementList stm_list = new StatementList();
+    Exp exp;
+    ExpList exp_list = new ExpList();
+}{
+	<PUBLIC> 
+    type = Type() 
+    id = Id()
+	<LPAREN> 
+    formal_list = FormalList() 
+    <RPAREN>
+	<LBRACE> 
+
+    (   
+        LOOKAHEAD(2) 
+        var_dlc = VarDecl() { var_list.addElement(var_dlc); }
+    )*
+
+    ( stm = Statement() { stm_list.addElement(stm); })* 
+    <RETURN> 
+    exp = Exp()
+    <SEMI_COMMA> 
+    <RBRACE>
+    { return new MethodDecl( type, id, formal_list, var_list, stm_list, exp); }
+}
+
+Formal FormalList():	{ // doubt
+    FormalList formal_list = new FormalList();
+    Formal formal_head, formal_rest;
+    Identifier id;
+}{
+    	type = Type() 
+        id = Id() 
+        { formal_head = new Formal(type, id); }
+        { formal_list.addElement(formal_head); }
+        (formal_rest = FormalRest() { formal_list.addElement(formal_rest); })*
+        { return formal_list; } 
+
+    | { return formal_list; }
+}
+
+Formal FormalRest():	{
+    Type type;
+    Identifier id;
+}{
+	<COMMA> 
+    type = Type() 
+    id = Id()
+    { return new Formal(type, id); }
+}
+
+Type Type():	{
+    Identifier id;
+}{
+		LOOKAHEAD(2) 
+        <INT> // was Id()
+        <LCOLCH> 
+        <RCOLCH> // Warning correction:I think that its the line of the earlier expansion
+        //{ return new Type(); }
+        { return IntArrayType(); }
+
+	|	<BOOLEAN> 
+        { return new BooleanType(); }
+
+	|	<INT> 
+        { return new IntegerType(); }
+
+	|	id = Id()
+        { return new IdentifierType(id); } // doubt if is correct
+}
+
+Statement Statement():	{ 
+	Statement stm, else_stm;
+    Identifier id;
+    StatementList statement_list = new StatementList();
+    Exp exp, exp2;
+}{
+		<LBRACE> 
+        ( statement = Statement() { statement_list.addElement(statement); })* 
+        <RBRACE>
+        { return new Block(statement_list); }
+
+	|	<IF> 
+        <LPAREN> 
+        exp = Exp() 
+        <RPAREN> 
+        stm = Statement() 
+        <ELSE> 
+        elsestm = Statement()
+        { return new If(exp, stm, elsestm); }
+
+	|	<WHILE> 
+        <LPAREN> 
+        exp = Exp()
+        <RPAREN>
+        stm = Statement()
+        { return new While(exp, stm); }
+
+	|	<PRINT> 
+        <LPAREN> 
+        exp = Exp() 
+        <RPAREN> 
+        <SEMI_COMMA>
+        { return new Print(exp); }
+
+	|	LOOKAHEAD(2)
+        id = Id()   
+        <EQUAL> 
+        exp = Exp() 
+        <SEMI_COMMA>
+        { return new Assign(id, exp); }
+
+	|	id = Id() 
+        <LCOLCH> 
+        exp = Exp() 
+        <RCOLCH> 
+        <EQUAL> 
+        exp2 = Exp() 
+        <SEMI_COMMA>
+        { return new ArrayAssign(id, exp, exp2); }
+}
+
+// the refactoring of the grammar is maintained by the return semantic action
+// this is the reason why the call to aux does no appear
+Exp Exp():	{  
+    IntegerLiteral integer; // exp
+    True tr;
+    False fs;
+    Identifier id, new_id;
+    This th;
+    Exp integer_exp, bang_exp, p_exp;
+    NewArray new_integer; // doubt if it's correct
+    NewObject new_obj;
+    No no;
+
+}{
+		<TRUE> 
+        { tr = new True(); }
+        { return Exp_Aux(tr); }
+
+	|	<FALSE> 
+        { fs = new False(); }
+        { return Exp_Aux(fs); }
+
+	|	<INTEGER_LITERAL> 
+        { integer = new IntegerLiteral(Integer.parseInt(token.image)); }
+        { return Exp_Aux(integer); }
+
+	|	id = Id() // it's probably wrong
+        { id = IdentifierExp(id); }
+        { return Exp_Aux(id); }
+
+	|	<THIS> 
+        { ths = This(); }
+        { return Exp_Aux(th); }
+
+	|	LOOKAHEAD(2) <NEW> <INT> 
+        <LCOLCH> 
+        integer_exp = Exp()
+        { new_integer = new NewArray(integer_exp); } // doubt here
+        <RCOLCH> 
+        { return Exp_Aux(new_integer); }
+
+	|	<NEW> 
+        new_id = Id()
+        { new_obj = new NewObject(new_id); }
+        <LPAREN> 
+        <RPAREN> 
+        { return Exp_Aux(new_obj); }
+
+	|	<LPAREN>
+        p_exp = Exp()
+        <RPAREN> 
+        { return Exp_Aux(p_exp); }
+
+	|	<BANG> 
+        bang_exp = Exp() 
+        { no = new No(bang_exp); }
+        { return Exp_Aux(no); }
+}
+
+// doubt with the exp_aux and use of object declaration atribution
+Exp Exp_Aux(Exp exp):	{
+    Exp exp_aux;
+    And ad;
+    Plus plus;
+    Minus minus;
+    Times times;
+    LessThan less; // absence
+    ArrayLookup array;
+    ArrayLength length;
+    Identifier id;
+    ExpList explist;
+    Call call;
+}{
+		<AND> 
+        exp_aux = Exp()
+        { ad = new And(exp, exp_aux); } // exp comes from call
+        { return Exp_Aux(ad); }
+
+    |   <LESS_THAN>
+        exp_aux = Exp()
+        { less = new LessThan(exp, exp_aux); }
+        { return Exp_Aux(less); }
+
+	|	<PLUS>
+        exp_aux = Exp()
+        { plus = new Plus(exp, exp_aux); }
+        { return Exp_Aux(plus); }
+
+	|	<MINUS>
+        exp_aux = Exp() 
+        { minus = new Minus(exp, exp_aux); }
+        { return Exp_Aux(minus); }
+
+	|	<TIMES> 
+        exp_aux = Exp()
+        { times = new Times(exp, exp_aux); }
+        { return Exp_Aux(times); }
+
+	|	<LCOLCH>  // doubt if it's correct
+        exp_aux = Exp() 
+        { array = new ArrayLookup(exp, exp_aux); }
+        <RCOLCH> 
+        { return Exp_Aux(array); }
+
+	|	LOOKAHEAD(2) 
+        <DOT>
+        <LENGTH> 
+        { length = new ArrayLength(exp); }
+        { return Exp_Aux(exp); }
+
+	|	<DOT> 
+        id = Id() // atention
+        <LPAREN> 
+        explist = ExpList() // atention
+        <RPAREN> 
+        { call = new Call(exp, id, exp_aux); }
+        { return Exp_Aux(call); }
+
+	|	{ return exp; }
+}
+
+ExpList ExpList():	{
+    Exp exp_begin;
+    Exp exp_end;
+    ExpList explist = new ExpList();
+}{
+		( exp_begin = Exp() {explist.addElement(exp_begin);} )
+        ( exp_end = ExpRest() {explist.addElement(exp_end);} )*
+        { return explist; }
+	|	{ return explist; } // Before was empty
+}
+
+Exp ExpRest():	{
+    Exp exp;
+}{
+    <COMMA> 
+    exp = Exp() // doubt whether to call a method or node
+    { return exp; }
+}
+
+Identifier Id():	{}{
+	<ID>
+    { return new Identifier(token.image); }
+}       
